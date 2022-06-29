@@ -9,6 +9,7 @@ import {
   Dimensions,
   Animated,
   Alert,
+  ImageBackground,
 } from 'react-native';
 import Svg, {Line} from 'react-native-svg';
 import {launchImageLibrary, launchCamera} from 'react-native-image-picker';
@@ -35,8 +36,7 @@ const DrawPointModal: FC = () => {
       backgroundColor: '#EA5B70',
     },
     image: {
-      marginVertical: 24,
-      alignItems: 'center',
+      flex: 1
     },
   });
 
@@ -105,6 +105,14 @@ const DrawPointModal: FC = () => {
           style={{flex: 1, backgroundColor: 'transparent'}}
           {...panResponder.panHandlers}
         >
+          <View key={response?.assets[0]?.uri} style={styles.image}>
+            <ImageBackground
+              resizeMode="cover"
+             
+              style={{width: width, height: height}}
+              source={{uri: response?.assets[0]?.uri}}
+            />
+          </View>
           {!!endTouchX && !!endTouchY && (
             <Svg height={height} width={width}>
               <Line
@@ -119,6 +127,48 @@ const DrawPointModal: FC = () => {
           )}
         </View>
       </View>
+      <FAB.Group
+        fabStyle={styles.fab}
+        open={open}
+        icon={open ? 'minus' : 'plus'}
+        visible={true}
+        actions={[
+          {
+            icon: 'camera',
+            small: false,
+            onPress: () => {
+              launchCamera(
+                {
+                  saveToPhotos: true,
+                  mediaType: 'photo',
+                  includeBase64: false,
+                },
+                setResponse,
+              );
+            },
+          },
+          {
+            icon: 'image-area',
+            small: false,
+            onPress: () => {
+              launchImageLibrary(
+                {
+                  selectionLimit: 0,
+                  mediaType: 'photo',
+                  includeBase64: false,
+                },
+                setResponse,
+              );
+            },
+          },
+        ]}
+        onStateChange={onStateChange}
+        onPress={() => {
+          if (open) {
+            // do something if the speed dial is open
+          }
+        }}
+      />
     </View>
   );
 };

@@ -13,6 +13,7 @@
     "react": "17.0.2",
     "react-native": "0.68.2",
     "react-native-image-picker": "^4.8.4",
+    "react-native-image-zoom-viewer": "^3.0.1",
     "react-native-paper": "^4.12.2",
     "react-native-svg": "^12.3.0",
     "react-native-vector-icons": "^9.2.0",
