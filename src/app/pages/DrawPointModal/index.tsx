@@ -1,4 +1,4 @@
-import React, {FC, useRef, useState} from 'react';
+import React, {FC, useMemo, useRef, useState} from 'react';
 import {
   StyleSheet,
   View,
@@ -36,85 +36,98 @@ const DrawPointModal: FC = () => {
       backgroundColor: '#EA5B70',
     },
     image: {
-      flex: 1
+      flex: 1,
+    },
+    box: {
+      height: 150,
+      width: 150,
+      backgroundColor: 'blue',
+      borderRadius: 5,
     },
   });
 
   const width = Dimensions.get('window').width;
   const height = Dimensions.get('window').height;
-  const pan = useRef(new Animated.ValueXY()).current;
   const [startTouchX, setStartTouchX] = useState<number>(0);
   const [startTouchY, setStartTouchY] = useState<number>(0);
   const [endTouchX, setEndTouchX] = useState<number>(0);
   const [endTouchY, setEndTouchY] = useState<number>(0);
-
-  const panResponder = useRef(
-    PanResponder.create({
-      onStartShouldSetPanResponder: (evt, gestureState) => {
-        console.log('onStartShouldSetPanResponder');
-        return true;
-      },
-      onStartShouldSetPanResponderCapture: (evt, gestureState) => {
-        console.log('onStartShouldSetPanResponderCapture');
-        setEndTouchX(0);
-        setEndTouchY(0);
-        setStartTouchX(evt.nativeEvent.locationX);
-        setStartTouchY(evt.nativeEvent.locationY);
-        return true;
-      },
-      onMoveShouldSetPanResponder: (event, gestureState) => {
-        console.log('onMoveShouldSetPanResponder');
-        return false;
-      },
-      onMoveShouldSetPanResponderCapture: (event, gestureState) => {
-        console.log('onMoveShouldSetPanResponderCapture');
-        return false;
-      },
-      onPanResponderGrant: (event, gestureState) => {
-        console.log('onPanResponderGrant');
-        return false;
-      },
-      onPanResponderMove: Animated.event([null, {dx: pan.x, dy: pan.y}], {
-        useNativeDriver: false,
-      }),
-      onPanResponderRelease: evt => {
-        console.log('onPanResponderRelease');
-        setEndTouchX(evt.nativeEvent.locationX);
-        setEndTouchY(evt.nativeEvent.locationY);
-      },
-    }),
-  ).current;
-
+  const [pencil, setPencil] = React.useState<boolean>(false);
+  const [move, setMove] = React.useState<boolean>(false);
   const [state, setState] = React.useState({open: false});
-
   const onStateChange = ({open}: any) => setState({open});
-
   const [response, setResponse] = React.useState<any>(null);
-
   const {open} = state;
+  const pan = useRef(new Animated.ValueXY()).current;
+  const panResponder = useMemo(
+    () =>
+      PanResponder.create({
+        onStartShouldSetPanResponder: (evt, gestureState) => {
+          //console.log('onStartShouldSetPanResponder');
+          return true;
+        },
+        onStartShouldSetPanResponderCapture: (evt, gestureState) => {
+          //console.log('onStartShouldSetPanResponderCapture');
+          if (pencil) {
+            setEndTouchX(0);
+            setEndTouchY(0);
+            setStartTouchX(evt.nativeEvent.locationX);
+            setStartTouchY(evt.nativeEvent.locationY);
+          }
+          return true;
+        },
+        onMoveShouldSetPanResponder: (event, gestureState) => {
+          //console.log('onMoveShouldSetPanResponder');
+          return false;
+        },
+        onMoveShouldSetPanResponderCapture: (event, gestureState) => {
+          //console.log('onMoveShouldSetPanResponderCapture');
+          return false;
+        },
+        onPanResponderGrant: (event, gestureState) => {         
+          return false;
+        },
+        onPanResponderMove: move ? Animated.event([null, {dx: pan.x, dy: pan.y}], {
+          useNativeDriver: false,
+        }) : undefined,
+        onPanResponderRelease: evt => {
+          //console.log('onPanResponderRelease');
+          pan.flattenOffset();
+          if (pencil) {
+            setEndTouchX(evt.nativeEvent.locationX);
+            setEndTouchY(evt.nativeEvent.locationY);
+          }
+        },
+      }),
+    [pencil, move],
+  );
 
-  console.log('startTouchX: ', startTouchX);
+  /* console.log('startTouchX: ', startTouchX);
   console.log('startTouchY: ', startTouchY);
   console.log('endTouchX: ', endTouchX);
-  console.log('endTouchY: ', endTouchY);
+  console.log('endTouchY: ', endTouchY); */
 
   return (
     <View style={styles.MainContainer}>
       <View style={styles.childView}>
-        <View
-          style={{flex: 1, backgroundColor: 'transparent'}}
+        <Animated.View
+          style={{
+            transform: [{translateX: pan.x}, {translateY: pan.y}],
+          }}
           {...panResponder.panHandlers}
         >
           <View key={response?.assets[0]?.uri} style={styles.image}>
             <ImageBackground
-              resizeMode="cover"
-             
-              style={{width: width, height: height}}
+              resizeMode="stretch"
+              style={{
+                width: response?.assets[0]?.width,
+                height: response?.assets[0]?.height,
+              }}
               source={{uri: response?.assets[0]?.uri}}
             />
           </View>
           {!!endTouchX && !!endTouchY && (
-            <Svg height={height} width={width}>
+            <Svg height={response?.assets[0]?.height} width={response?.assets[0]?.width}>
               <Line
                 x1={startTouchX}
                 y1={startTouchY}
@@ -125,7 +138,7 @@ const DrawPointModal: FC = () => {
               />
             </Svg>
           )}
-        </View>
+        </Animated.View>
       </View>
       <FAB.Group
         fabStyle={styles.fab}
@@ -134,17 +147,29 @@ const DrawPointModal: FC = () => {
         visible={true}
         actions={[
           {
-            icon: 'camera',
+            icon: 'magnify-plus',
             small: false,
+            onPress: () => {},
+          },
+          {
+            icon: 'magnify-minus',
+            small: false,
+            onPress: () => {},
+          },
+          {
+            icon: 'arrow-all',
+            small: false,
+            color: move ? 'red' : 'gray',
             onPress: () => {
-              launchCamera(
-                {
-                  saveToPhotos: true,
-                  mediaType: 'photo',
-                  includeBase64: false,
-                },
-                setResponse,
-              );
+              setMove(!move);
+            },
+          },
+          {
+            icon: 'pencil',
+            small: false,
+            color: pencil ? 'red' : 'gray',
+            onPress: () => {
+              setPencil(!pencil);
             },
           },
           {
