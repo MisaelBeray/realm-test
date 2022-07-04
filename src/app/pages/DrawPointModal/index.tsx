@@ -1,4 +1,4 @@
-import React, {FC, useMemo, useRef, useState} from 'react';
+import React, {FC, MutableRefObject, useMemo, useRef, useState} from 'react';
 import {
   StyleSheet,
   View,
@@ -10,6 +10,7 @@ import {
   Animated,
   Alert,
   ImageBackground,
+  PixelRatio,
 } from 'react-native';
 import Svg, {Line} from 'react-native-svg';
 import {launchImageLibrary, launchCamera} from 'react-native-image-picker';
@@ -46,13 +47,12 @@ const DrawPointModal: FC = () => {
     },
   });
 
-  const width = Dimensions.get('window').width;
-  const height = Dimensions.get('window').height;
   const [startTouchX, setStartTouchX] = useState<number>(0);
   const [startTouchY, setStartTouchY] = useState<number>(0);
   const [endTouchX, setEndTouchX] = useState<number>(0);
   const [endTouchY, setEndTouchY] = useState<number>(0);
   const [pencil, setPencil] = React.useState<boolean>(false);
+  const [scale, setScale] = useState<number>(0.8);
   const [move, setMove] = React.useState<boolean>(false);
   const [state, setState] = React.useState({open: false});
   const onStateChange = ({open}: any) => setState({open});
@@ -69,8 +69,8 @@ const DrawPointModal: FC = () => {
         onStartShouldSetPanResponderCapture: (evt, gestureState) => {
           //console.log('onStartShouldSetPanResponderCapture');
           if (pencil) {
-            setEndTouchX(0);
-            setEndTouchY(0);
+            setEndTouchX(evt.nativeEvent.locationX);
+            setEndTouchY(evt.nativeEvent.locationY);
             setStartTouchX(evt.nativeEvent.locationX);
             setStartTouchY(evt.nativeEvent.locationY);
           }
@@ -84,15 +84,18 @@ const DrawPointModal: FC = () => {
           //console.log('onMoveShouldSetPanResponderCapture');
           return false;
         },
-        onPanResponderGrant: (event, gestureState) => {         
+        onPanResponderGrant: (event, gestureState) => {
           return false;
         },
-        onPanResponderMove: move ? Animated.event([null, {dx: pan.x, dy: pan.y}], {
-          useNativeDriver: false,
-        }) : undefined,
+        onPanResponderMove: move
+          ? Animated.event([null, {dx: pan.x, dy: pan.y}], {
+              useNativeDriver: false,
+            })
+          : undefined,
         onPanResponderRelease: evt => {
           //console.log('onPanResponderRelease');
-          pan.flattenOffset();
+          pan.extractOffset();
+
           if (pencil) {
             setEndTouchX(evt.nativeEvent.locationX);
             setEndTouchY(evt.nativeEvent.locationY);
@@ -112,7 +115,11 @@ const DrawPointModal: FC = () => {
       <View style={styles.childView}>
         <Animated.View
           style={{
-            transform: [{translateX: pan.x}, {translateY: pan.y}],
+            transform: [
+              {translateX: pan.x},
+              {translateY: pan.y},
+              {scale: scale},
+            ],
           }}
           {...panResponder.panHandlers}
         >
@@ -127,7 +134,10 @@ const DrawPointModal: FC = () => {
             />
           </View>
           {!!endTouchX && !!endTouchY && (
-            <Svg height={response?.assets[0]?.height} width={response?.assets[0]?.width}>
+            <Svg
+              height={response?.assets[0]?.height}
+              width={response?.assets[0]?.width}
+            >
               <Line
                 x1={startTouchX}
                 y1={startTouchY}
@@ -147,14 +157,23 @@ const DrawPointModal: FC = () => {
         visible={true}
         actions={[
           {
-            icon: 'magnify-plus',
+            icon: 'camera',
             small: false,
             onPress: () => {},
           },
           {
+            icon: 'magnify-plus',
+            small: false,
+            onPress: () => {
+              if (scale < 2) setScale(scale + 0.4);
+            },
+          },
+          {
             icon: 'magnify-minus',
             small: false,
-            onPress: () => {},
+            onPress: () => {
+              if (scale > 0.4) setScale(scale - 0.4);
+            },
           },
           {
             icon: 'arrow-all',
