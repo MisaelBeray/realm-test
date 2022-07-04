@@ -1,20 +1,16 @@
-import React, {FC, MutableRefObject, useMemo, useRef, useState} from 'react';
+import React, {FC, useMemo, useRef, useState} from 'react';
 import {
   StyleSheet,
   View,
-  Platform,
-  Text,
   PanResponder,
-  Image,
-  Dimensions,
   Animated,
-  Alert,
   ImageBackground,
-  PixelRatio,
 } from 'react-native';
 import Svg, {Line} from 'react-native-svg';
-import {launchImageLibrary, launchCamera} from 'react-native-image-picker';
-import {FAB, Portal, Provider} from 'react-native-paper';
+import {launchImageLibrary} from 'react-native-image-picker';
+import {FAB } from 'react-native-paper';
+import ViewShot from 'react-native-view-shot';
+import CameraRoll from '@react-native-community/cameraroll';
 const DrawPointModal: FC = () => {
   const styles = StyleSheet.create({
     MainContainer: {
@@ -46,7 +42,7 @@ const DrawPointModal: FC = () => {
       borderRadius: 5,
     },
   });
-
+  const viewShotRef = useRef<ViewShot>(null);
   const [startTouchX, setStartTouchX] = useState<number>(0);
   const [startTouchY, setStartTouchY] = useState<number>(0);
   const [endTouchX, setEndTouchX] = useState<number>(0);
@@ -123,31 +119,40 @@ const DrawPointModal: FC = () => {
           }}
           {...panResponder.panHandlers}
         >
-          <View key={response?.assets[0]?.uri} style={styles.image}>
-            <ImageBackground
-              resizeMode="stretch"
-              style={{
-                width: response?.assets[0]?.width,
-                height: response?.assets[0]?.height,
-              }}
-              source={{uri: response?.assets[0]?.uri}}
-            />
-          </View>
-          {!!endTouchX && !!endTouchY && (
-            <Svg
-              height={response?.assets[0]?.height}
-              width={response?.assets[0]?.width}
-            >
-              <Line
-                x1={startTouchX}
-                y1={startTouchY}
-                x2={endTouchX}
-                y2={endTouchY}
-                stroke="red"
-                strokeWidth="8"
+          <ViewShot
+            style={{
+              width: response?.assets[0]?.width,
+              height: response?.assets[0]?.height,
+            }}
+            ref={viewShotRef}
+            options={{format: 'jpg', quality: 1}}
+          >
+            <View key={response?.assets[0]?.uri} style={styles.image}>
+              <ImageBackground
+                resizeMode="stretch"
+                style={{
+                  width: response?.assets[0]?.width,
+                  height: response?.assets[0]?.height,
+                }}
+                source={{uri: response?.assets[0]?.uri}}
               />
-            </Svg>
-          )}
+            </View>
+            {!!endTouchX && !!endTouchY && (
+              <Svg
+                height={response?.assets[0]?.height}
+                width={response?.assets[0]?.width}
+              >
+                <Line
+                  x1={startTouchX}
+                  y1={startTouchY}
+                  x2={endTouchX}
+                  y2={endTouchY}
+                  stroke="red"
+                  strokeWidth="8"
+                />
+              </Svg>
+            )}
+          </ViewShot>
         </Animated.View>
       </View>
       <FAB.Group
@@ -159,7 +164,11 @@ const DrawPointModal: FC = () => {
           {
             icon: 'camera',
             small: false,
-            onPress: () => {},
+            onPress: () => {
+              viewShotRef?.current?.capture?.().then(uri => {
+                CameraRoll.save(uri);
+              });
+            },
           },
           {
             icon: 'magnify-plus',
