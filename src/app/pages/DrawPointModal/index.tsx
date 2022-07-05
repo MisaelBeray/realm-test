@@ -8,7 +8,7 @@ import {
 } from 'react-native';
 import Svg, {Line} from 'react-native-svg';
 import {launchImageLibrary} from 'react-native-image-picker';
-import {FAB } from 'react-native-paper';
+import {FAB} from 'react-native-paper';
 import ViewShot from 'react-native-view-shot';
 import CameraRoll from '@react-native-community/cameraroll';
 const DrawPointModal: FC = () => {
@@ -43,10 +43,6 @@ const DrawPointModal: FC = () => {
     },
   });
   const viewShotRef = useRef<ViewShot>(null);
-  const [startTouchX, setStartTouchX] = useState<number>(0);
-  const [startTouchY, setStartTouchY] = useState<number>(0);
-  const [endTouchX, setEndTouchX] = useState<number>(0);
-  const [endTouchY, setEndTouchY] = useState<number>(0);
   const [pencil, setPencil] = React.useState<boolean>(false);
   const [scale, setScale] = useState<number>(0.8);
   const [move, setMove] = React.useState<boolean>(false);
@@ -55,6 +51,18 @@ const DrawPointModal: FC = () => {
   const [response, setResponse] = React.useState<any>(null);
   const {open} = state;
   const pan = useRef(new Animated.ValueXY()).current;
+
+  const [drawLineTouch, setDrawLineTouch] = React.useState(Array<IDrawLine>);
+
+  let drawLine: IDrawLine = {};
+
+  interface IDrawLine {
+    startX?: number;
+    endX?: number;
+    startY?: number;
+    endY?: number;
+  }
+
   const panResponder = useMemo(
     () =>
       PanResponder.create({
@@ -65,10 +73,12 @@ const DrawPointModal: FC = () => {
         onStartShouldSetPanResponderCapture: (evt, gestureState) => {
           //console.log('onStartShouldSetPanResponderCapture');
           if (pencil) {
-            setEndTouchX(evt.nativeEvent.locationX);
-            setEndTouchY(evt.nativeEvent.locationY);
-            setStartTouchX(evt.nativeEvent.locationX);
-            setStartTouchY(evt.nativeEvent.locationY);
+            drawLine = {
+              startX: evt.nativeEvent.locationX,
+              startY: evt.nativeEvent.locationY,
+              endX: evt.nativeEvent.locationX,
+              endY: evt.nativeEvent.locationY,
+            };
           }
           return true;
         },
@@ -92,19 +102,21 @@ const DrawPointModal: FC = () => {
           //console.log('onPanResponderRelease');
           pan.extractOffset();
 
-          if (pencil) {
-            setEndTouchX(evt.nativeEvent.locationX);
-            setEndTouchY(evt.nativeEvent.locationY);
+          if (pencil) {        
+            drawLine = {
+              startX: drawLine.startX,
+              startY: drawLine.startY,
+              endX: evt.nativeEvent.locationX,
+              endY: evt.nativeEvent.locationY,
+            };
+
+            setDrawLineTouch(arr => [...arr, drawLine]);
+
           }
         },
       }),
     [pencil, move],
   );
-
-  /* console.log('startTouchX: ', startTouchX);
-  console.log('startTouchY: ', startTouchY);
-  console.log('endTouchX: ', endTouchX);
-  console.log('endTouchY: ', endTouchY); */
 
   return (
     <View style={styles.MainContainer}>
@@ -117,16 +129,14 @@ const DrawPointModal: FC = () => {
               {scale: scale},
             ],
           }}
-          {...panResponder.panHandlers}
-        >
+          {...panResponder.panHandlers}>
           <ViewShot
             style={{
               width: response?.assets[0]?.width,
               height: response?.assets[0]?.height,
             }}
             ref={viewShotRef}
-            options={{format: 'jpg', quality: 1}}
-          >
+            options={{format: 'jpg', quality: 1}}>
             <View key={response?.assets[0]?.uri} style={styles.image}>
               <ImageBackground
                 resizeMode="stretch"
@@ -137,21 +147,23 @@ const DrawPointModal: FC = () => {
                 source={{uri: response?.assets[0]?.uri}}
               />
             </View>
-            {!!endTouchX && !!endTouchY && (
-              <Svg
-                height={response?.assets[0]?.height}
-                width={response?.assets[0]?.width}
-              >
-                <Line
-                  x1={startTouchX}
-                  y1={startTouchY}
-                  x2={endTouchX}
-                  y2={endTouchY}
-                  stroke="red"
-                  strokeWidth="8"
-                />
-              </Svg>
-            )}
+            <Svg
+              height={response?.assets[0]?.height}
+              width={response?.assets[0]?.width}>
+              {drawLineTouch?.map((item: IDrawLine, index) => {
+                return (
+                  <Line
+                    key={index}
+                    x1={item.startX}
+                    y1={item.startY}
+                    x2={item.endX}
+                    y2={item.endY}
+                    stroke="red"
+                    strokeWidth="8"
+                  />
+                );
+              })}
+            </Svg>
           </ViewShot>
         </Animated.View>
       </View>
