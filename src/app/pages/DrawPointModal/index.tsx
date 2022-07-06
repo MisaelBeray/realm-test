@@ -41,7 +41,7 @@ const DrawPointModal: FC = () => {
   });
   const viewShotRef = useRef<ViewShot>(null);
   const [pencil, setPencil] = React.useState<boolean>(false);
-  const [scale, setScale] = useState<number>(0.8);
+  const [scale, setScale] = useState<number>(1);
   const [move, setMove] = React.useState<boolean>(false);
   const [state, setState] = React.useState({open: false});
   const onStateChange = ({open}: any) => setState({open});
@@ -116,18 +116,22 @@ const DrawPointModal: FC = () => {
 
   return (
     <View style={styles.MainContainer}>
-      <Animated.View
+      <ViewShot
         style={{
-          transform: [{translateX: pan.x}, {translateY: pan.y}, {scale: scale}],
+          width: response?.assets[0]?.width,
+          height: response?.assets[0]?.height,
         }}
-        {...panResponder.panHandlers}>
-        <ViewShot
+        ref={viewShotRef}
+        options={{format: 'jpg', quality: 1}}>
+        <Animated.View
           style={{
-            width: response?.assets[0]?.width,
-            height: response?.assets[0]?.height,
+            transform: [
+              {translateX: pan.x},
+              {translateY: pan.y},
+              {scale: scale},
+            ],
           }}
-          ref={viewShotRef}
-          options={{format: 'jpg', quality: 1}}>
+          {...panResponder.panHandlers}>
           <ImageBackground
             resizeMode="stretch"
             style={{
@@ -155,8 +159,8 @@ const DrawPointModal: FC = () => {
               );
             })}
           </Svg>
-        </ViewShot>
-      </Animated.View>
+        </Animated.View>
+      </ViewShot>
 
       <FAB.Group
         fabStyle={styles.fab}
@@ -168,6 +172,7 @@ const DrawPointModal: FC = () => {
             icon: 'camera',
             small: false,
             onPress: () => {
+              setScale(1);
               viewShotRef?.current?.capture?.().then(uri => {
                 CameraRoll.save(uri);
               });
