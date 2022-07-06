@@ -32,9 +32,6 @@ const DrawPointModal: FC = () => {
     fab: {
       backgroundColor: '#EA5B70',
     },
-    image: {
-      flex: 1,
-    },
     box: {
       height: 150,
       width: 150,
@@ -52,7 +49,7 @@ const DrawPointModal: FC = () => {
   const {open} = state;
   const pan = useRef(new Animated.ValueXY()).current;
 
-  const [drawLineTouch, setDrawLineTouch] = React.useState(Array<IDrawLine>);
+  const [drawLineTouch, setDrawLineTouch] = React.useState<IDrawLine[]>([]);
 
   let drawLine: IDrawLine = {};
 
@@ -102,7 +99,7 @@ const DrawPointModal: FC = () => {
           //console.log('onPanResponderRelease');
           pan.extractOffset();
 
-          if (pencil) {        
+          if (pencil) {
             drawLine = {
               startX: drawLine.startX,
               startY: drawLine.startY,
@@ -111,7 +108,6 @@ const DrawPointModal: FC = () => {
             };
 
             setDrawLineTouch(arr => [...arr, drawLine]);
-
           }
         },
       }),
@@ -120,53 +116,48 @@ const DrawPointModal: FC = () => {
 
   return (
     <View style={styles.MainContainer}>
-      <View style={styles.childView}>
-        <Animated.View
+      <Animated.View
+        style={{
+          transform: [{translateX: pan.x}, {translateY: pan.y}, {scale: scale}],
+        }}
+        {...panResponder.panHandlers}>
+        <ViewShot
           style={{
-            transform: [
-              {translateX: pan.x},
-              {translateY: pan.y},
-              {scale: scale},
-            ],
+            width: response?.assets[0]?.width,
+            height: response?.assets[0]?.height,
           }}
-          {...panResponder.panHandlers}>
-          <ViewShot
+          ref={viewShotRef}
+          options={{format: 'jpg', quality: 1}}>
+          <ImageBackground
+            resizeMode="stretch"
             style={{
+              flex: 1,
               width: response?.assets[0]?.width,
               height: response?.assets[0]?.height,
             }}
-            ref={viewShotRef}
-            options={{format: 'jpg', quality: 1}}>
-            <View key={response?.assets[0]?.uri} style={styles.image}>
-              <ImageBackground
-                resizeMode="stretch"
-                style={{
-                  width: response?.assets[0]?.width,
-                  height: response?.assets[0]?.height,
-                }}
-                source={{uri: response?.assets[0]?.uri}}
-              />
-            </View>
-            <Svg
-              height={response?.assets[0]?.height}
-              width={response?.assets[0]?.width}>
-              {drawLineTouch?.map((item: IDrawLine, index) => {
-                return (
-                  <Line
-                    key={index}
-                    x1={item.startX}
-                    y1={item.startY}
-                    x2={item.endX}
-                    y2={item.endY}
-                    stroke="red"
-                    strokeWidth="8"
-                  />
-                );
-              })}
-            </Svg>
-          </ViewShot>
-        </Animated.View>
-      </View>
+            source={{uri: response?.assets[0]?.uri}}
+          />
+
+          <Svg
+            height={response?.assets[0]?.height}
+            width={response?.assets[0]?.width}>
+            {drawLineTouch?.map((item: IDrawLine, index) => {
+              return (
+                <Line
+                  key={index}
+                  x1={item.startX}
+                  y1={item.startY}
+                  x2={item.endX}
+                  y2={item.endY}
+                  stroke="red"
+                  strokeWidth="8"
+                />
+              );
+            })}
+          </Svg>
+        </ViewShot>
+      </Animated.View>
+
       <FAB.Group
         fabStyle={styles.fab}
         open={open}
