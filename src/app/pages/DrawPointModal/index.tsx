@@ -98,6 +98,7 @@ const DrawPointModal: FC = () => {
         onPanResponderRelease: evt => {
           //console.log('onPanResponderRelease');
           pan.extractOffset();
+          setImagePosition(new Animated.ValueXY(pan));
 
           if (pencil) {
             drawLine = {
@@ -114,6 +115,8 @@ const DrawPointModal: FC = () => {
     [pencil, move],
   );
 
+  const [imagePosition, setImagePosition] = useState<Animated.ValueXY>(pan);
+
   return (
     <View style={styles.MainContainer}>
       <ViewShot
@@ -126,8 +129,8 @@ const DrawPointModal: FC = () => {
         <Animated.View
           style={{
             transform: [
-              {translateX: pan.x},
-              {translateY: pan.y},
+              {translateX: imagePosition?.x},
+              {translateY: imagePosition?.y},
               {scale: scale},
             ],
           }}
@@ -173,6 +176,8 @@ const DrawPointModal: FC = () => {
             small: false,
             onPress: () => {
               setScale(1);
+              setImagePosition(new Animated.ValueXY());
+
               viewShotRef?.current?.capture?.().then(uri => {
                 CameraRoll.save(uri);
               });

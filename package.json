@@ -14,6 +14,7 @@
     "fbjs": "^3.0.4",
     "react": "17.0.2",
     "react-native": "0.68.2",
+    "react-native-drag-text-editor": "^0.0.7",
     "react-native-image-picker": "^4.8.4",
     "react-native-image-zoom-viewer": "^3.0.1",
     "react-native-paper": "^4.12.2",
